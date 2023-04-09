@@ -159,6 +159,10 @@ def translate_bibtex_to_dictionary(bibfile):
         i = 0
         separator = "empty"
         while len(s) > 0:
+            if i == 0 and s[i] == ",":
+                s = s[1:]
+                continue
+
             if number == 0 and separator == "empty" and s[i] == "{":
                 number += 1
                 flag = 1
