@@ -124,10 +124,7 @@ def cleanup_page(s):
     return s
 
 
-def translate_bibtex_to_dictionary(bibfile):
-    with open(bibfile, "r") as f:
-        datalist = f.readlines()
-
+def extract_bibitem(datalist):
     # Discard unwanted characteres and commented lines
     datalist = [s.strip(" \n\t") for s in datalist]
     datalist = [s for s in datalist if s[:2] != "%%"]
@@ -135,7 +132,7 @@ def translate_bibtex_to_dictionary(bibfile):
     # Convert a list into a string
     data = ""
     for s in datalist:
-        data += s
+        data += s + "\n"
 
     # Split the data at the separators @ and put it in a list
     biblist = data.split("@")
@@ -158,33 +155,10 @@ def translate_bibtex_to_dictionary(bibfile):
         flag = 0
         i = 0
         separator = "empty"
-        while len(s) > 0:
-            if i == 0 and s[i] == ",":
-                s = s[1:]
-                continue
 
-            if number == 0 and separator == "empty" and s[i] == "{":
-                number += 1
-                flag = 1
-                separator = "bracket"
-            elif number == 0 and separator == "empty" and s[i] == '"':
-                number += 1
-                flag = 1
-                separator = "quote"
-            elif number == 1 and separator == "bracket" and s[i] == "}":
-                number -= 1
-            elif number == 1 and separator == "quote" and s[i] == '"':
-                number -= 1
-
-            if number == 0 and flag == 1:
-                keylist.append(s[: i + 1])
-                s = s[i + 1 :]
-                flag = 0
-                i = 0
-                separator = "empty"
-                continue
-
-            i += 1
+        for k in s.split("\n"):
+            if len(k) != 0:
+                keylist.append(k)
 
         keylist = [t.strip(" ,\t\n") for t in keylist]
         listlist.append(keylist)
@@ -202,6 +176,62 @@ def translate_bibtex_to_dictionary(bibfile):
 
         dictlist.append(keydict)
 
+    return dictlist
+
+
+def extract_crossref(bibfile):
+    with open(bibfile, "r") as f:
+        datalist = f.readlines()
+
+    dictlist = extract_bibitem(datalist)
+
+    strdict = {}
+    for d in dictlist:
+        if "type" not in d:
+            continue
+        if d["type"] == "string":
+            s = d["id"]
+            key, sep, value = s.partition("=")
+            key = key.strip(" ,\n\t{}")
+            key = key.lower()
+            value = value.strip(' ,\n\t{}"')
+            strdict[key] = value
+
+    def canonicalize_title(title, strdict):
+        import re
+
+        for k in strdict:
+            v = strdict[k]
+            title = title.replace(k.upper(), v)
+        title = re.sub(r"[^a-zA-Z\s\n\.0-9\(\)]", " ", title)
+        title = re.sub(r"\s+", " ", title)
+        return title
+
+    crossref = {}
+    for d in dictlist:
+        if "type" not in d:
+            continue
+        if d["type"] == "proceedings":
+            key = d["id"]
+            d["crossref_title"] = canonicalize_title(d["title"], strdict)
+            del d["title"]
+            del d["type"]
+            del d["id"]
+            crossref[key] = d
+
+    return crossref
+
+
+def replace_crossref(value, key, crossref):
+    return value if key != "crossref" or value not in crossref else crossref[value]
+
+
+def translate_bibtex_to_dictionary(bibfile, crossref):
+    with open(bibfile, "r") as f:
+        datalist = f.readlines()
+
+    dictlist = extract_bibitem(datalist)
+
     # Backup all the original data
     dictlist_bkp = copy.deepcopy(dictlist)
 
@@ -209,10 +239,14 @@ def translate_bibtex_to_dictionary(bibfile):
     dictlist = []
     for d in dictlist_bkp:
         dlower = {k: v for (k, v) in d.items()}
+        if "crossref" in dlower:
+            k = dlower["crossref"]
+            if k in crossref:
+                dlower = dlower | crossref[k]
         dictlist.append(dlower)
 
     # Keep only articles in the list
-    dictlist = [d for d in dictlist if d["type"] == "article"]
+    dictlist = [d for d in dictlist if d["type"] == "inproceedings"]
     # keep only articles that have author and title
     dictlist = [d for d in dictlist if "author" in d and "title" in d]
     dictlist = [d for d in dictlist if d["author"] != "" and d["title"] != ""]
@@ -225,27 +259,7 @@ def translate_bibtex_to_dictionary(bibfile):
     return dictlist
 
 
-def main():
-    # Get the BibTeX, template, and output file names
-    if len(sys.argv) < 3:
-        sys.exit("Error: Invalid command.")
-    else:
-        bibfiles = sys.argv[1].split(",")
-        templatefile = sys.argv[2]
-        if len(sys.argv) == 4:
-            print_to_stdout = 0
-            outputfile = sys.argv[3]
-        elif len(sys.argv) == 3:
-            print_to_stdout = 1
-
-    # Open, read and close the BibTeX and template files
-    with open(templatefile, "r") as f:
-        template = f.read()
-
-    dictlist = []
-    for bibfile in bibfiles:
-        dictlist.extend(translate_bibtex_to_dictionary(bibfile))
-
+def print_html(dictlist, template):
     # Get a list of the article years and the min and max values
     years = [int(d["year"]) for d in dictlist if "year" in d]
     years.sort()
@@ -253,8 +267,8 @@ def main():
     newer = years[-1]
 
     # Set the fields to be exported to html (following this order)
-    mandatory = ["author", "title"]
-    optional = ["journal", "eprint", "volume", "pages", "year", "url", "doi"]
+    mandatory = ["title", "year", "author"]
+    optional = ["crossref_title", "url"]
 
     # Write down the list html code
     counter = 0
@@ -265,52 +279,58 @@ def main():
             for d in dictlist:
                 if "year" in d and int(d["year"]) == y:
                     mandata = [d[key] for key in mandatory]
-                    html += "<li>{0}, <i>{1}</i>".format(*mandata)
+                    html += "<li><strong>{0}, {1}<strong>\n{2}".format(*mandata)
 
                     for t in optional:
                         if t in d:
-                            if t == "journal":
-                                html += ", {0}".format(d[t])
-                            if t == "eprint":
-                                html += ":{0}".format(d[t])
-                            if t == "volume":
-                                html += " <b>{0}</b>".format(d[t])
-                            if t == "pages":
-                                a = cleanup_page(d[t])
-                                html += ", {0}".format(a)
-                            if t == "year":
-                                html += ", {0}".format(d[t])
-                            if t == "url":
-                                html += ' <a href="{0}">[html]</a>'.format(d[t])
-                            if t == "doi":
-                                html += (
-                                    ' <a href="http://dx.doi.org/{0}">[doi]</a>'.format(
-                                        d[t]
-                                    )
-                                )
+                            if t == "crossref_title":
+                                html += "\n{0}".format(d[t])
+                            # if t == "url":
+                            #     html += ' <a href="{0}">[html]</a>'.format(d[t])
 
                     html += "</li>\n"
                     counter += 1
 
             html += "</ul>\n"
 
+    print(dictlist)
+
     # Fill up the empty fields in the template
-    a, mark, b = template.partition("<!--LIST_OF_REFERENCES-->")
-    a = a.replace("<!--NUMBER_OF_REFERENCES-->", str(counter), 1)
-    a = a.replace("<!--NEWER-->", str(newer), 1)
-    a = a.replace("<!--OLDER-->", str(older), 1)
-    now = date.today()
-    a = a.replace("<!--DATE-->", date.today().strftime("%d %b %Y"))
+    Template = template.replace("<!--LIST_OF_REFERENCES-->", html)
+    tempalte = template.replace("<!--DATE-->", date.today().strftime("%d %b %Y"))
 
     # Join the header, list and footer html code
-    final = a + html + b
+    final = template
 
     # Write the final result to the output file or to stdout
-    if print_to_stdout == 0:
-        with open(outputfile, "w") as f:
-            f.write(final)
-    else:
-        print(final)
+    print(final)
+
+
+def main():
+    # Get the BibTeX, template, and output file names
+    if len(sys.argv) < 3:
+        sys.exit("Error: Invalid command.")
+
+    bibfiles = sys.argv[1].split(",")
+    templatefile = sys.argv[2]
+
+    # Open, read and close the BibTeX and template files
+    with open(templatefile, "r") as f:
+        template = f.read()
+
+    crossref = {}
+    for bibfile in bibfiles:
+        crossref = crossref | extract_crossref(bibfile)
+
+    # print("crossref: ", crossref)
+
+    dictlist = []
+    for bibfile in bibfiles:
+        dictlist.extend(translate_bibtex_to_dictionary(bibfile, crossref))
+
+    # print("dictlist: ", dictlist)
+
+    print_html(dictlist, template)
 
 
 main()
