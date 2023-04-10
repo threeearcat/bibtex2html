@@ -83,7 +83,6 @@ def cleanup_author(s):
         "\\~A": "&Atilde;",
         "\\~o": "&otilde;",
         "\\~O": "&Otilde;",
-        ".": " ",
         "\\'\\": "",
         "{": "",
         "}": "",
@@ -95,10 +94,17 @@ def cleanup_author(s):
 
     s = s.strip()
 
-    before, sep, after = s.rpartition(" and ")
-    before = before.replace(" and ", ", ")
-    s = before + sep + after
+    authors = s.split("and")
+    s = ""
+    for author in authors:
+        if s != "":
+            s += ", "
+        before, sep, after = author.partition(",")
+        s += after.strip() + " " + before.strip()
 
+    before, sep, after = s.rpartition(",")
+    s = before + ", and " + after
+    s = re.sub(r"\s+", " ", s)
     return s
 
 
