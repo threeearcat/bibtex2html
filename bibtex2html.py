@@ -46,6 +46,7 @@ prints the result to the standard output.
 
 import sys
 import copy
+import re
 from datetime import date
 
 
@@ -107,9 +108,11 @@ def cleanup_title(s):
     cleanup_title(str) -> str
     """
 
-    s = s.lower()
-    s = s.capitalize()
+    s = re.sub(r"[^a-zA-Z\s\n\.0-9\(\):]", " ", s)
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"\s+:", ":", s)
 
+    # TODO: clean up titles
     return s
 
 
@@ -198,8 +201,6 @@ def extract_crossref(bibfile):
             strdict[key] = value
 
     def canonicalize_title(title, strdict):
-        import re
-
         for k in strdict:
             v = strdict[k]
             title = title.replace(k.upper(), v)
@@ -213,7 +214,7 @@ def extract_crossref(bibfile):
             continue
         if d["type"] == "proceedings":
             key = d["id"]
-            d["crossref_title"] = canonicalize_title(d["title"], strdict)
+            d["booktitle"] = canonicalize_title(d["title"], strdict)
             del d["title"]
             del d["type"]
             del d["id"]
@@ -259,51 +260,67 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
     return dictlist
 
 
-def print_html(dictlist, template):
+def print_result(dictlist, template, format_entry):
     # Get a list of the article years and the min and max values
     years = [int(d["year"]) for d in dictlist if "year" in d]
     years.sort()
     older = years[0]
     newer = years[-1]
 
-    # Set the fields to be exported to html (following this order)
-    mandatory = ["title", "year", "author"]
-    optional = ["crossref_title", "url"]
-
     # Write down the list html code
     counter = 0
-    html = ""
+    result = ""
     for y in reversed(range(older, newer + 1)):
         if y in years:
-            html += '<h3 id="y{0}">{0}</h3>\n\n\n<ul>\n'.format(y)
+            global print_year
+            if print_year:
+                result += "# {}\\\n".format(y)
             for d in dictlist:
                 if "year" in d and int(d["year"]) == y:
-                    mandata = [d[key] for key in mandatory]
-                    html += "<li><strong>{0}, {1}<strong>\n{2}".format(*mandata)
-
-                    for t in optional:
-                        if t in d:
-                            if t == "crossref_title":
-                                html += "\n{0}".format(d[t])
-                            # if t == "url":
-                            #     html += ' <a href="{0}">[html]</a>'.format(d[t])
-
-                    html += "</li>\n"
+                    result += format_entry(d)
                     counter += 1
+            result += "\n"
 
-            html += "</ul>\n"
-
-    print(dictlist)
+    # print(dictlist)
 
     # Fill up the empty fields in the template
-    Template = template.replace("<!--LIST_OF_REFERENCES-->", html)
-    tempalte = template.replace("<!--DATE-->", date.today().strftime("%d %b %Y"))
+    template = template.replace("<!--LIST_OF_REFERENCES-->", result)
+    template = template.replace("<!--DATE-->", date.today().strftime("%d %b %Y"))
+    for d in dictlist:
+        template = template.replace("<!--{}-->".format(d["id"]), format_entry(d))
 
-    # Join the header, list and footer html code
+    # Write the final result
     final = template
-
-    # Write the final result to the output file or to stdout
     print(final)
+
+
+# Set the fields to be exported to html (following this order)
+mandatory = ["title", "year", "author"]
+optional = ["booktitle", "url"]
+
+
+# def format_entry_html(d):
+#     mandata = [d[key] for key in mandatory]
+#     html = "<li><strong>{0}, {1}<strong>\n{2}".format(*mandata)
+#     for t in optional:
+#         if t in d:
+#             if t == "booktitle":
+#                 html += "\n{0}".format(d[t])
+#             # if t == "url":
+#             #     html += ' <a href="{0}">[html]</a>'.format(d[t])
+#     html += "</li>\n"
+#     return html
+
+
+def format_entry_markdown(d):
+    mandata = [d[key] for key in mandatory]
+    markdown = "- **{0}**, {1}\\\n{2}".format(*mandata)
+    for t in optional:
+        if t in d:
+            if t == "booktitle":
+                markdown += "\\\n{0}".format(d[t])
+    markdown += "\n"
+    return markdown
 
 
 def main():
@@ -330,7 +347,8 @@ def main():
 
     # print("dictlist: ", dictlist)
 
-    print_html(dictlist, template)
+    print_result(dictlist, template, format_entry_markdown)
 
 
+print_year = False
 main()
