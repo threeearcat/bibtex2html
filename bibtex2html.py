@@ -239,6 +239,9 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
     with open(bibfile, "r") as f:
         datalist = f.readlines()
 
+    import os
+    cls = os.path.basename(bibfile).removesuffix(".bib")
+
     dictlist = extract_bibitem(datalist)
 
     # Backup all the original data
@@ -252,6 +255,7 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
             k = dlower["crossref"]
             if k in crossref:
                 dlower = dlower | crossref[k]
+        dlower["class"] = cls
         dictlist.append(dlower)
 
     # Keep only articles in the list
@@ -296,17 +300,13 @@ def monthToNum(d):
         }
         return months[m]
 
-
-def print_result(dictlist, template, format_entry):
+def get_result(dictlist, cls, format_entry):
     # Get a list of the article years and the min and max values
     years = [int(d["year"]) for d in dictlist if "year" in d]
     years.sort()
     older = years[0]
     newer = years[-1]
 
-    bold_me(dictlist)
-
-    # Write down the list html code
     result = ""
     for y in reversed(range(older, newer + 1)):
         if y in years:
@@ -316,6 +316,9 @@ def print_result(dictlist, template, format_entry):
 
             printing = []
             for d in dictlist:
+                if cls != "all" and ("class" not in d or d["class"] != cls):
+                    continue
+
                 if "year" in d and int(d["year"]) == y:
                     printing.append(d)
 
@@ -323,11 +326,21 @@ def print_result(dictlist, template, format_entry):
             for d in printing:
                 result += format_entry(d)
             result += "\n"
+    return result
 
-    # print(dictlist)
+def print_result(dictlist, template, format_entry):
+
+    bold_me(dictlist)
+
+    # Write down the list html code
+    all = get_result(dictlist, "", format_entry)
+    intl = get_result(dictlist, "intl", format_entry)
+    misc = get_result(dictlist, "misc", format_entry)
 
     # Fill up the empty fields in the template
-    template = template.replace("<!--LIST_OF_REFERENCES-->", result)
+    template = template.replace("<!--LIST_OF_REFERENCES-->", all)
+    template = template.replace("<!--LIST_OF_INTL-->", intl)
+    template = template.replace("<!--LIST_OF_MISC-->", misc)
     template = template.replace("<!--DATE-->", date.today().strftime("%d %b %Y"))
     for d in dictlist:
         template = template.replace("<!--{}-->".format(d["id"]), format_entry(d))
