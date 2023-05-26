@@ -351,30 +351,17 @@ def print_result(dictlist, template, format_entry):
 
 
 # Set the fields to be exported to html (following this order)
-mandatory = ["title", "year", "author"]
-optional = ["booktitle", "url"]
+mandatory = ["title", "year", "author", "booktitle"]
+optional = ["url"]
 
-
-# def format_entry_html(d):
-#     mandata = [d[key] for key in mandatory]
-#     html = "<li><strong>{0}, {1}<strong>\n{2}".format(*mandata)
-#     for t in optional:
-#         if t in d:
-#             if t == "booktitle":
-#                 html += "\n{0}".format(d[t])
-#             # if t == "url":
-#             #     html += ' <a href="{0}">[html]</a>'.format(d[t])
-#     html += "</li>\n"
-#     return html
 
 def format_entry_markdown(d):
+    d["booktitle"] = re.sub(r'\(([A-Za-z]*)\)', r'(**\1**)', d["booktitle"])
     mandata = [d[key] for key in mandatory]
-    markdown = "- **{0}**, {1}\\\n{2}".format(*mandata)
+    markdown = "- **{0}**\\\n{2}\\\n{3}, {1}".format(*mandata)
     # print(markdown)
     for t in optional:
-        if t in d:
-            if t == "booktitle":
-                markdown += "\\\n*{0}*".format(d[t])
+        pass
     markdown += "\n"
     return markdown
 
