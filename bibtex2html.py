@@ -172,6 +172,8 @@ def extract_bibitem(datalist):
         keylist = [t.strip(" ,\t\n") for t in keylist]
         listlist.append(keylist)
 
+    listlist.reverse()
+
     # Create a list of dicts containing key : value of each bibitem
     dictlist = []
     for l in listlist:
@@ -265,6 +267,35 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
 
     return dictlist
 
+def bold_me(dictlist):
+    bolded_me = "**<u>" + me + "</u>**"
+    for d in dictlist:
+        d['author'] = d['author'].replace(me, bolded_me)
+
+
+def monthToNum(d):
+    if 'month' not in d:
+        return 0
+    m = d['month']
+    try:
+        return int(m)
+    except:
+        months =  {
+            'jan': 1,
+            'feb': 2,
+            'mar': 3,
+            'apr': 4,
+            'may': 5,
+            'jun': 6,
+            'jul': 7,
+            'aug': 8,
+            'sep': 9,
+            'oct': 10,
+            'nov': 11,
+            'dec': 12,
+        }
+        return months[m]
+
 
 def print_result(dictlist, template, format_entry):
     # Get a list of the article years and the min and max values
@@ -273,18 +304,24 @@ def print_result(dictlist, template, format_entry):
     older = years[0]
     newer = years[-1]
 
+    bold_me(dictlist)
+
     # Write down the list html code
-    counter = 0
     result = ""
     for y in reversed(range(older, newer + 1)):
         if y in years:
             global print_year
             if print_year:
                 result += "# {}\\\n".format(y)
+
+            printing = []
             for d in dictlist:
                 if "year" in d and int(d["year"]) == y:
-                    result += format_entry(d)
-                    counter += 1
+                    printing.append(d)
+
+            # printing.sort(key=lambda d: monthToNum(d), reverse=True)
+            for d in printing:
+                result += format_entry(d)
             result += "\n"
 
     # print(dictlist)
@@ -317,14 +354,14 @@ optional = ["booktitle", "url"]
 #     html += "</li>\n"
 #     return html
 
-
 def format_entry_markdown(d):
     mandata = [d[key] for key in mandatory]
     markdown = "- **{0}**, {1}\\\n{2}".format(*mandata)
+    # print(markdown)
     for t in optional:
         if t in d:
             if t == "booktitle":
-                markdown += "\\\n{0}".format(d[t])
+                markdown += "\\\n*{0}*".format(d[t])
     markdown += "\n"
     return markdown
 
@@ -357,4 +394,5 @@ def main():
 
 
 print_year = False
+me = "Dae R. Jeong"
 main()
