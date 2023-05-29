@@ -352,7 +352,7 @@ def print_result(dictlist, template, format_entry):
 
 # Set the fields to be exported to html (following this order)
 mandatory = ["title", "year", "author", "booktitle"]
-optional = ["paper"]
+optional = ["paper", "slide", "code"]
 
 def format_optional(d):
     optdata = ""
