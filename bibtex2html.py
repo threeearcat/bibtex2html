@@ -47,6 +47,7 @@ prints the result to the standard output.
 import sys
 import copy
 import re
+import os
 from datetime import date
 
 
@@ -239,7 +240,6 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
     with open(bibfile, "r") as f:
         datalist = f.readlines()
 
-    import os
     cls = os.path.basename(bibfile).removesuffix(".bib")
 
     dictlist = extract_bibitem(datalist)
@@ -355,6 +355,9 @@ mandatory = ["title", "year", "author", "booktitle"]
 optional = ["paper", "slide", "code"]
 
 def format_optional(d):
+    global skip_optional
+    if skip_optional:
+        return ""
     optdata = ""
     for opt in optional:
         if opt not in d:
@@ -401,4 +404,5 @@ def main():
 
 print_year = False
 me = "Dae R. Jeong"
+skip_optional = True if "SKIP_OPTIONAL" in os.environ else False
 main()
