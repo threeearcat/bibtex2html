@@ -353,6 +353,14 @@ def print_result(dictlist, template, format_entry):
 # Set the fields to be exported to html (following this order)
 mandatory = ["title", "year", "author", "booktitle"]
 optional = ["paper", "slide", "code"]
+colors = {
+    "paper": "rgb(36,35,99)",
+    "slide": "rgb(204, 153, 0)",
+    "code": "rgb(236,60,52)",
+}
+
+def coloring(s, color):
+    return "<span style=\"color:{}\">{}</span>".format(color, s)
 
 def format_optional(d):
     global skip_optional
@@ -362,16 +370,19 @@ def format_optional(d):
     for opt in optional:
         if opt not in d:
             continue
-        optdata += "[[{}]({})]".format(opt, d[opt])
+        o = opt if opt not in colors else coloring(opt, colors[opt])
+        optdata += "[[**{}**]({})]".format(o, d[opt])
     return optdata
 
 
 def format_entry_markdown(d):
     d["booktitle"] = re.sub(r'\(([A-Za-z]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
+    miscdata = "" if "misc" not in d else "\\\n<span style=\"color:crimson\">***"+d["misc"]+"</span>***"
     mandata = [d[key] for key in mandatory]
     mandata.append(optdata)
-    markdown = "- **{0} {4}**\\\n{2}\\\n{3}, {1}\n".format(*mandata, *optdata)
+    mandata.append(miscdata)
+    markdown = "- **{0} {4}**\\\n{2}\\\n{3}, {1}{5}\n".format(*mandata, *optdata)
     return markdown
 
 
