@@ -356,7 +356,7 @@ optional = ["paper", "slide", "code"]
 colors = {
     "paper": "rgb(36,35,99)",
     "slide": "rgb(204, 153, 0)",
-    "code": "rgb(236,60,52)",
+    "code": "crimson",
 }
 
 def coloring(s, color):
