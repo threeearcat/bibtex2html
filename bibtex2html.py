@@ -354,7 +354,7 @@ def print_result(dictlist, template, format_entry):
 mandatory = ["title", "year", "author", "booktitle"]
 optional = ["paper", "slide", "code"]
 colors = {
-    "paper": "rgb(36,35,99)",
+    "paper": "darkblue",
     "slide": "rgb(204, 153, 0)",
     "code": "crimson",
 }
@@ -374,11 +374,16 @@ def format_optional(d):
         optdata += "[[**{}**]({})]".format(o, d[opt])
     return optdata
 
+def format_misc(d):
+    global skip_optional
+    if skip_optional:
+        return ""
+    return "" if "misc" not in d else "\\\n<span class=\"misc\">***"+d["misc"]+"</span>***"
 
 def format_entry_markdown(d):
     d["booktitle"] = re.sub(r'\(([A-Za-z&]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
-    miscdata = "" if "misc" not in d else "\\\n<span style=\"color:crimson\">***"+d["misc"]+"</span>***"
+    miscdata = format_misc(d)
     prefix = "(*{}*) ".format(d["prefix"]) if "prefix" in d else ""
     data = [d[key] for key in mandatory]
     data.append(optdata)
