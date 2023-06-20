@@ -213,7 +213,7 @@ def extract_crossref(bibfile):
         for k in strdict:
             v = strdict[k]
             title = title.replace(k.upper(), v)
-        title = re.sub(r"[^a-zA-Z\s\n\.0-9\(\)]", " ", title)
+        title = re.sub(r"[^a-zA-Z\s\n\.0-9\(\)&]", " ", title)
         title = re.sub(r"\s+", " ", title)
         return title
 
@@ -376,7 +376,7 @@ def format_optional(d):
 
 
 def format_entry_markdown(d):
-    d["booktitle"] = re.sub(r'\(([A-Za-z]*)\)', r'(**\1**)', d["booktitle"])
+    d["booktitle"] = re.sub(r'\(([A-Za-z&]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
     miscdata = "" if "misc" not in d else "\\\n<span style=\"color:crimson\">***"+d["misc"]+"</span>***"
     mandata = [d[key] for key in mandatory]
