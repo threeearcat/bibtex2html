@@ -379,10 +379,12 @@ def format_entry_markdown(d):
     d["booktitle"] = re.sub(r'\(([A-Za-z&]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
     miscdata = "" if "misc" not in d else "\\\n<span style=\"color:crimson\">***"+d["misc"]+"</span>***"
-    mandata = [d[key] for key in mandatory]
-    mandata.append(optdata)
-    mandata.append(miscdata)
-    markdown = "- **{0} {4}**\\\n{2}\\\n{3}, {1}{5}\n".format(*mandata, *optdata)
+    prefix = "(*{}*) ".format(d["prefix"]) if "prefix" in d else ""
+    data = [d[key] for key in mandatory]
+    data.append(optdata)
+    data.append(miscdata)
+    data.append(prefix)
+    markdown = "- **{6}{0} {4}**\\\n{2}\\\n{3}, {1}{5}\n".format(*data)
     return markdown
 
 
