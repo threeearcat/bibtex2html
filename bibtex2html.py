@@ -353,14 +353,14 @@ def print_result(dictlist, template, format_entry):
 # Set the fields to be exported to html (following this order)
 mandatory = ["title", "year", "author", "booktitle"]
 optional = ["paper", "slide", "code"]
-colors = {
-    "paper": "darkblue",
-    "slide": "rgb(204, 153, 0)",
-    "code": "crimson",
+classes = {
+    "paper": "paper",
+    "slide": "slide",
+    "code": "code",
 }
 
-def coloring(s, color):
-    return "<span style=\"color:{}\">{}</span>".format(color, s)
+def styling(s):
+    return "<span class=\"{}\">{}</span>".format(classes[s], s)
 
 def format_optional(d):
     global skip_optional
@@ -370,21 +370,20 @@ def format_optional(d):
     for opt in optional:
         if opt not in d:
             continue
-        o = opt if opt not in colors else coloring(opt, colors[opt])
-        optdata += "[[**{}**]({})]".format(o, d[opt])
+        optdata += "[[**{}**]({})]".format(styling(opt), d[opt])
     return optdata
 
 def format_misc(d):
     global skip_optional
     if skip_optional:
         return ""
-    return "" if "misc" not in d else "\\\n<span class=\"misc\">***"+d["misc"]+"</span>***"
+    return "" if "misc" not in d else "\\\n<span class=\"misc\">"+d["misc"]+"</span>"
 
 def format_entry_markdown(d):
     d["booktitle"] = re.sub(r'\(([A-Za-z&]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
     miscdata = format_misc(d)
-    prefix = "(*{}*) ".format(d["prefix"]) if "prefix" in d else ""
+    prefix = "({}) ".format(d["prefix"]) if "prefix" in d else ""
     data = [d[key] for key in mandatory]
     data.append(optdata)
     data.append(miscdata)
