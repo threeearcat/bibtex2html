@@ -272,7 +272,7 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
     return dictlist
 
 def bold_me(dictlist):
-    bolded_me = "**<u>" + me + "</u>**"
+    bolded_me = "<u>" + me + "</u>"
     for d in dictlist:
         d['author'] = d['author'].replace(me, bolded_me)
 
