@@ -308,11 +308,17 @@ def get_result(dictlist, cls, format_entry):
     newer = years[-1]
 
     result = ""
+    print_header = True
     for y in reversed(range(older, newer + 1)):
         if y in years:
             global print_year
             if print_year:
                 result += "# {}\\\n".format(y)
+                print_header = True
+            if print_header and print_table:
+                result += "|<-->|<-->|\n"
+                result += "|-|----------------------------|\n"
+                print_header = False
 
             printing = []
             for d in dictlist:
@@ -325,7 +331,6 @@ def get_result(dictlist, cls, format_entry):
             # printing.sort(key=lambda d: monthToNum(d), reverse=True)
             for d in printing:
                 result += format_entry(d)
-            result += "\n"
     return result
 
 def print_result(dictlist, template, format_entry):
@@ -379,15 +384,34 @@ def format_misc(d):
         return ""
     return "" if "misc" not in d else "\\\n<span class=\"misc\">"+d["misc"]+"</span>"
 
-def format_entry_markdown(d):
+def format_abbrv(d):
+    if "abbrv" in d:
+        return "**{}**".format(d["abbrv"])
+    else:
+        return ""
+
+def __get_data(d):
     d["booktitle"] = re.sub(r'\(([A-Za-z&]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
     miscdata = format_misc(d)
     prefix = "({}) ".format(d["prefix"]) if "prefix" in d else ""
+    abbrv = format_abbrv(d)
     data = [d[key] for key in mandatory]
     data.append(optdata)
     data.append(miscdata)
     data.append(prefix)
+    data.append(abbrv)
+    return data
+
+
+def format_entry_markdown_table(d):
+    data = __get_data(d)
+    markdown = "|{7}|**{6}{0} {4}**\\\n{2}\\\n{3}, {1}{5}|\n".format(*data)
+    return markdown
+
+
+def format_entry_markdown_list(d):
+    data = __get_data(d)
     markdown = "- **{6}{0} {4}**\\\n{2}\\\n{3}, {1}{5}\n".format(*data)
     return markdown
 
@@ -416,10 +440,15 @@ def main():
 
     # print("dictlist: ", dictlist)
 
+    if print_table:
+        format_entry_markdown = format_entry_markdown_table
+    else:
+        format_entry_markdown = format_entry_markdown_list
     print_result(dictlist, template, format_entry_markdown)
 
 
 print_year = False
 me = "Dae R. Jeong"
 skip_optional = True if "SKIP_OPTIONAL" in os.environ else False
+print_table = True if "PRINT_TABLE" in os.environ else False
 main()
