@@ -116,7 +116,7 @@ def cleanup_title(s):
     cleanup_title(str) -> str
     """
 
-    s = re.sub(r"[^a-zA-Z\s\n\.0-9\(\):]", " ", s)
+    s = re.sub(r"[^a-zA-Z\s\n\.0-9\(\):\-]", " ", s)
     s = re.sub(r"\s+", " ", s)
     s = re.sub(r"\s+:", ":", s)
 
@@ -210,7 +210,7 @@ def extract_crossref(bibfile):
             value = value.strip(' ,\n\t{}"')
             strdict[key] = value
 
-    def canonicalize_title(title, strdict):
+    def canonicalize_booktitle(title, strdict):
         for k in strdict:
             v = strdict[k]
             title = title.replace(k.upper(), v)
@@ -224,7 +224,7 @@ def extract_crossref(bibfile):
             continue
         if d["type"] == "proceedings":
             key = d["id"]
-            d["booktitle"] = canonicalize_title(d["title"], strdict)
+            d["booktitle"] = canonicalize_booktitle(d["title"], strdict)
             del d["title"]
             del d["type"]
             del d["id"]
