@@ -103,9 +103,10 @@ def cleanup_author(s):
         before, sep, after = author.partition(",")
         s += after.strip() + " " + before.strip()
 
-    before, sep, after = s.rpartition(",")
-    s = before + ", and " + after
-    s = re.sub(r"\s+", " ", s)
+    if len(authors) > 1:
+        before, sep, after = s.rpartition(",")
+        s = before + ", and " + after
+        s = re.sub(r"\s+", " ", s)
     return s
 
 
