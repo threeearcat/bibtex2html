@@ -257,10 +257,12 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
             if k in crossref:
                 dlower = dlower | crossref[k]
         dlower["class"] = cls
+        if "journal" in dlower and "booktitle" not in dlower:
+            dlower["booktitle"] = dlower["journal"]
         dictlist.append(dlower)
 
     # Keep only articles in the list
-    dictlist = [d for d in dictlist if d["type"] == "inproceedings"]
+    dictlist = [d for d in dictlist if d["type"] in ["inproceedings", "article"]]
     # keep only articles that have author and title
     dictlist = [d for d in dictlist if "author" in d and "title" in d]
     dictlist = [d for d in dictlist if d["author"] != "" and d["title"] != ""]
