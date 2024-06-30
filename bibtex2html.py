@@ -387,6 +387,12 @@ def format_misc(d):
         return ""
     return "" if "misc" not in d else "\\\n<span class=\"misc\">"+d["misc"]+"</span>"
 
+def format_comment(d):
+    global skip_optional
+    if skip_optional:
+        return ""
+    return "" if "comment" not in d else "\\\n<span class=\"comment\">"+d["comment"]+"</span>"
+
 def format_abbrv(d):
     if "abbrv" in d:
         return "**{}**".format(d["abbrv"])
@@ -397,11 +403,13 @@ def __get_data(d):
     d["booktitle"] = re.sub(r'\(([A-Za-z&]*)\)', r'(**\1**)', d["booktitle"])
     optdata = format_optional(d)
     miscdata = format_misc(d)
+    commentdata = format_comment(d)
     prefix = "({}) ".format(d["prefix"]) if "prefix" in d else ""
     abbrv = format_abbrv(d)
     data = [d[key] for key in mandatory]
     data.append(optdata)
     data.append(miscdata)
+    data.append(commentdata)
     data.append(prefix)
     data.append(abbrv)
     return data
@@ -409,7 +417,7 @@ def __get_data(d):
 
 def format_entry_markdown_table(d):
     data = __get_data(d)
-    markdown = "|{7}|**{6}{0} {4}**\\\n{2}\\\n{3}, {1}{5}|\n".format(*data)
+    markdown = "|{8}|**{7}{0} {4}**\\\n{2}\\\n{3}, {1}{5}{6}|\n".format(*data)
     return markdown
 
 
