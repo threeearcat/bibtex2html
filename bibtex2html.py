@@ -213,7 +213,9 @@ def extract_crossref(bibfile):
     def canonicalize_booktitle(title, strdict):
         for k in strdict:
             v = strdict[k]
-            title = title.replace(k.upper(), v)
+            if k.upper() == title:
+                title = v
+                break
         title = re.sub(r"[^a-zA-Z\s\n\.0-9\(\)&]", " ", title)
         title = re.sub(r"\s+", " ", title)
         return title
