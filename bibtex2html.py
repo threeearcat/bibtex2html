@@ -390,9 +390,6 @@ def format_misc(d):
     return "" if "misc" not in d else "\\\n<span class=\"misc\">"+d["misc"]+"</span>"
 
 def format_comment(d):
-    global skip_optional
-    if skip_optional:
-        return ""
     return "" if "comment" not in d else "\\\n<span class=\"comment\">"+d["comment"]+"</span>"
 
 def format_abbrv(d):
@@ -425,7 +422,7 @@ def format_entry_markdown_table(d):
 
 def format_entry_markdown_list(d):
     data = __get_data(d)
-    markdown = "- **{6}{0} {4}**\\\n{2}\\\n{3}, {1}{5}\n".format(*data)
+    markdown = "- **{7}{0} {4}**\\\n{2}\\\n{3}, {1}{5}{6}\n".format(*data)
     return markdown
 
 
