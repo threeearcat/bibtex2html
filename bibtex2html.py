@@ -404,10 +404,28 @@ def format_misc(d):
         return "" if "misc" not in d else "<br><span class=\"misc\">"+escape_markdown(d["misc"])+"</span>"
     return "" if "misc" not in d else "\\\n<span class=\"misc\">"+escape_markdown(d["misc"])+"</span>"
 
+def note_to_comment(note):
+    """Convert a LaTeX note with \\textsuperscript to an HTML comment string.
+    Returns empty string if the note is not an author annotation."""
+    if "\\textsuperscript" not in note:
+        return ""
+    s = note
+    s = re.sub(r'\\textsuperscript\{([^}]*)\}', r'\1', s)
+    s = s.replace('\\textdagger', '\u2020')
+    s = s.replace('\\\\', '<br>')
+    s = re.sub(r'[{}]', '', s)
+    s = s.strip().strip('<br>').strip()
+    return s
+
 def format_comment(d):
+    comment = d.get("comment", "")
+    if not comment and "note" in d:
+        comment = note_to_comment(d["note"])
+    if not comment:
+        return ""
     if print_table:
-        return "" if "comment" not in d else "<br><span class=\"comment\">"+escape_markdown(d["comment"])+"</span>"
-    return "" if "comment" not in d else "\\\n<span class=\"comment\">"+escape_markdown(d["comment"])+"</span>"
+        return "<br><span class=\"comment\">"+escape_markdown(comment)+"</span>"
+    return "\\\n<span class=\"comment\">"+escape_markdown(comment)+"</span>"
 
 def format_abbrv(d):
     if "abbrv" in d:
