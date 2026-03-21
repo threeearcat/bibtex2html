@@ -84,6 +84,9 @@ def cleanup_author(s):
         "\\~A": "&Atilde;",
         "\\~o": "&otilde;",
         "\\~O": "&Otilde;",
+        '\\textsuperscript': '',
+        '\\textsubscript': '',
+        '\\textdagger': '†',
         "\\'\\": "",
         "{": "",
         "}": "",
@@ -107,6 +110,8 @@ def cleanup_author(s):
         before, sep, after = s.rpartition(",")
         s = before + ", and " + after
         s = re.sub(r"\s+", " ", s)
+    s = s.replace("*", "&#42;")
+    s = s.replace("†", "&#8224;")
     return s
 
 
@@ -265,6 +270,8 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
 
     # Keep only articles in the list
     dictlist = [d for d in dictlist if d["type"] in ["inproceedings", "article"]]
+    # Skip CV-only entries
+    dictlist = [d for d in dictlist if "cvonly" not in d]
     # keep only articles that have author and title
     dictlist = [d for d in dictlist if "author" in d and "title" in d]
     dictlist = [d for d in dictlist if d["author"] != "" and d["title"] != ""]
@@ -383,14 +390,24 @@ def format_optional(d):
         optdata += "[[**{}**]({})]".format(styling(opt), d[opt])
     return optdata
 
+def escape_markdown(s):
+    """Escape characters that conflict with markdown syntax."""
+    s = s.replace("*", "&#42;")
+    s = s.replace("†", "&#8224;")
+    return s
+
 def format_misc(d):
     global skip_optional
     if skip_optional:
         return ""
-    return "" if "misc" not in d else "\\\n<span class=\"misc\">"+d["misc"]+"</span>"
+    if print_table:
+        return "" if "misc" not in d else "<br><span class=\"misc\">"+escape_markdown(d["misc"])+"</span>"
+    return "" if "misc" not in d else "\\\n<span class=\"misc\">"+escape_markdown(d["misc"])+"</span>"
 
 def format_comment(d):
-    return "" if "comment" not in d else "\\\n<span class=\"comment\">"+d["comment"]+"</span>"
+    if print_table:
+        return "" if "comment" not in d else "<br><span class=\"comment\">"+escape_markdown(d["comment"])+"</span>"
+    return "" if "comment" not in d else "\\\n<span class=\"comment\">"+escape_markdown(d["comment"])+"</span>"
 
 def format_abbrv(d):
     if "abbrv" in d:
@@ -416,7 +433,7 @@ def __get_data(d):
 
 def format_entry_markdown_table(d):
     data = __get_data(d)
-    markdown = "|{8}|**{7}{0} {4}**\\\n{2}\\\n{3}, {1}{5}{6}|\n".format(*data)
+    markdown = "|{8}|**{7}{0} {4}**<br>{2}<br>{3}, {1}{5}{6}|\n".format(*data)
     return markdown
 
 
