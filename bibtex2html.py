@@ -270,6 +270,8 @@ def translate_bibtex_to_dictionary(bibfile, crossref):
 
     # Keep only articles in the list
     dictlist = [d for d in dictlist if d["type"] in ["inproceedings", "article"]]
+    # Skip CV-only entries
+    dictlist = [d for d in dictlist if "cvonly" not in d]
     # keep only articles that have author and title
     dictlist = [d for d in dictlist if "author" in d and "title" in d]
     dictlist = [d for d in dictlist if d["author"] != "" and d["title"] != ""]
