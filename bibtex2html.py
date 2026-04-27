@@ -216,14 +216,22 @@ def extract_crossref(bibfile):
             strdict[key] = value
 
     def canonicalize_booktitle(title, strdict):
-        for k in strdict:
-            v = strdict[k]
-            if k.upper() == title:
-                title = v
+        # BibTeX `#` concatenation (e.g. `{ 35th } # SEC`) leaves the parser
+        # with literal `}` / `#` chars and an unresolved key. Walk each piece
+        # and substitute the @string value when the part matches a key — drop
+        # edition prefixes ("35th") to keep the webpage style name-only.
+        resolved = None
+        for part in re.split(r"\s*#\s*", title):
+            part = part.strip(' {}"')
+            if part.lower() in strdict:
+                resolved = strdict[part.lower()]
                 break
+        if resolved is not None:
+            title = resolved
+        title = title.replace(r"\&", "&")
         title = re.sub(r"[^a-zA-Z\s\n\.0-9\(\)&]", " ", title)
         title = re.sub(r"\s+", " ", title)
-        return title
+        return title.strip()
 
     crossref = {}
     for d in dictlist:
