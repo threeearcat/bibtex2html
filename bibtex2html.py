@@ -300,10 +300,11 @@ def bold_me(dictlist):
 def monthToNum(d):
     if 'month' not in d:
         return 0
-    m = d['month']
+    m = d['month'].strip().lower()
     try:
         return int(m)
     except:
+        m = re.split(r"[^a-z]+", m)[0]
         months =  {
             'jan': 1,
             'feb': 2,
@@ -318,7 +319,7 @@ def monthToNum(d):
             'nov': 11,
             'dec': 12,
         }
-        return months[m]
+        return months.get(m, 0)
 
 def get_result(dictlist, cls, format_entry):
     # Get a list of the article years and the min and max values
@@ -348,7 +349,7 @@ def get_result(dictlist, cls, format_entry):
                 if "year" in d and int(d["year"]) == y:
                     printing.append(d)
 
-            # printing.sort(key=lambda d: monthToNum(d), reverse=True)
+            printing.sort(key=lambda d: monthToNum(d), reverse=True)
             for d in printing:
                 result += format_entry(d)
     return result
